@@ -40,7 +40,7 @@ public class StreamExample {
         lightStreamClient.addListener(new MyClientListener());
 
 
-        Subscription orderSubscription = new Subscription("DISTINCT", "ORDERS", new String[] {"OrderId", "MarketId", "Status", "" +
+        Subscription orderSubscription = new Subscription("DISTINCT", "ORDERS", new String[] {"OrderId", "MarketId", "Status",
                 "Type", "OriginalQuantity", "Quantity", "LastChangedTime",
                 "ExecutionPrice"    // values for this field is always  "CityIndex.Atlas.Business.OrderExecutionPrice"
         });
