@@ -62,6 +62,7 @@ public class StreamExample {
             @Override
             public void onEndOfSnapshot(String itemName, int itemPos) {
                 // some times this is not called, and when it is not streaming does not work
+                System.out.println("onEndOfSnapshot called.");
                 snapshotSemaphore.release();
             }
         };
@@ -73,8 +74,6 @@ public class StreamExample {
         boolean gotPermit = snapshotSemaphore.tryAcquire(10, TimeUnit.SECONDS);
         if (!gotPermit) {
             System.err.println("onEndOfSnapshot not called within 10 seconds after connecting. Streaming will not work!!!");
-        } else {
-            System.out.println("onEndOfSnapshot called.");
         }
 
         int c;
