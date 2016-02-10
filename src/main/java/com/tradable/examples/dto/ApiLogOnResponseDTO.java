@@ -1,4 +1,4 @@
-package com.tradable.examples;
+package com.tradable.examples.dto;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import lombok.Data;
