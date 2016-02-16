@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Gradle: :ls-client:">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/ls-client.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

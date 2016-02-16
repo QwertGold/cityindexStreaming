@@ -13,9 +13,13 @@ repositories {
     maven {
         url "http://www.lightstreamer.com/repo/maven"
     }
+    flatDir {
+        dirs 'lib'
+    }
 }
 
 dependencies {
+    compile name: 'ls-client'
     compile 'org.projectlombok:lombok:1.14.8'
     compile 'org.slf4j:slf4j-log4j12:1.7.10'
     compile 'org.slf4j:slf4j-api:1.7.10'
