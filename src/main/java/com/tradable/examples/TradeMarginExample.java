@@ -2,14 +2,14 @@ package com.tradable.examples;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lightstreamer.client.ItemUpdate;
-import com.lightstreamer.client.LightstreamerClient;
-import com.lightstreamer.client.Subscription;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.tradable.examples.dto.JSONOrderSide;
+import com.tradable.examples.lightstreamer.*;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -48,43 +48,45 @@ import lombok.extern.slf4j.Slf4j;
 public class TradeMarginExample extends AbstractCityIndexExample {
 
     public static void main(String[] args) throws Exception {
-
         new TradeMarginExample().runExample();
     }
 
     @Override
-    protected void run(LightstreamerClient lightStreamClient) throws Exception {
+    public ILightStreamer createClient() {
+        return new LightStreamerV5();
+    }
+
+    @Override
+    protected void run(ILightStreamer client) throws Exception {
 
         // map from orderId to stream data (+time) so we can check when the last stream update was
         ConcurrentHashMap<Integer, Entry> streamUpdates = new ConcurrentHashMap<>();
 
-        final ObjectMapper objectMapper = new ObjectMapper();
-        Subscription tradeMarginSubscription = new Subscription("MERGE", "TRADEMARGIN", new String[] {"OrderId", "OTEConverted", "PriceCalculatedAt"});
-        tradeMarginSubscription.setDataAdapter("TRADEMARGIN");
-        tradeMarginSubscription.addListener(new AbstractSubscriptionListener() {
+        ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
+        client.subscribe("TRADEMARGIN", "TRADEMARGIN", Mode.MERGE, new String[]{"OrderId", "OTEConverted", "PriceCalculatedAt"}, false, new DataListener() {
             @Override
-            public void onItemUpdate(ItemUpdate itemUpdate) {
-                int orderId = Integer.parseInt(itemUpdate.getValue("OrderId"));
-                streamUpdates.put(orderId, new Entry(itemUpdate));
+            public void onUpdate(Map<String, String> values) {
+                int orderId = Integer.parseInt(values.get("OrderId"));
+                streamUpdates.put(orderId, new Entry(values));
                 if (log.isDebugEnabled()) {
                     try {
-                        String s = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(itemUpdate.getFields());
+                        String s = writer.writeValueAsString(values);
                         log.debug(s);
 
                     } catch (Exception e) {
                         log.debug("Unable to convert message to JSON", e);
                     }
                 }
+            }
 
+            @Override
+            public void onSnapshotEnd(int itemPos, String itemName) {
+                System.out.println("on snapshot end " + itemName + " " + itemPos);
             }
         });
-        lightStreamClient.subscribe(tradeMarginSubscription);
-        lightStreamClient.connect();
 
-        // wait for light streamer to be connected
-        while (!"CONNECTED:HTTP-STREAMING".equals(lightStreamClient.getStatus())) {
-            sleep(100);
-        }
+        // wait for connection
+        sleep(1000);
 
         List<Integer> orderIds = new ArrayList<>();
         // place trade, marketId 401091573 is EUR/USD FOREX
@@ -130,11 +132,11 @@ public class TradeMarginExample extends AbstractCityIndexExample {
     }
 
     public static class Entry {
-        public final ItemUpdate item;
+        public final Map<String, String> data;
         public final long time = System.nanoTime();
 
-        public Entry(ItemUpdate item) {
-            this.item = item;
+        public Entry(Map<String, String> data) {
+            this.data = data;
         }
     }
 

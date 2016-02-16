@@ -6,9 +6,10 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.lightstreamer.client.LightstreamerClient;
 import com.tradable.examples.dto.*;
 import com.tradable.examples.dto.enums.CIOrderStatus;
+import com.tradable.examples.lightstreamer.ILightStreamer;
+import com.tradable.examples.lightstreamer.MultiVersionConnectionListener;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
@@ -29,14 +30,20 @@ public abstract class AbstractCityIndexExample {
     private ApiTradingAccountDTO account;
     private PriceSubscriptionManager priceSubscriptionManager = new PriceSubscriptionManager();
 
+    /**
+     * Allow derived classes to decide which version of lightstreamer they want
+     * @return an un configured client
+     */
+    public abstract ILightStreamer createClient();
+
     public void runExample() throws Exception {
 
         String userName = "DM438269";
         String password = "trade123";
 
-        LightstreamerClient lightStreamClient = getLightstreamerClient(userName, password);
-        priceSubscriptionManager.setClient(lightStreamClient);
-        run(lightStreamClient);
+        ILightStreamer client = getLightstreamerClient(userName, password);
+        priceSubscriptionManager.setClient(client);
+        run(client);
 
         int c;
         do {
@@ -48,12 +55,12 @@ public abstract class AbstractCityIndexExample {
             }
         } while (c != 'q');
         System.out.println("Quitting....");
-        lightStreamClient.disconnect();
+        client.disconnect();
         System.exit(0);
 
     }
 
-    private LightstreamerClient getLightstreamerClient(String userName, String password) {
+    private ILightStreamer getLightstreamerClient(String userName, String password) {
 
 
         ApiLogOnRequestDTO request = new ApiLogOnRequestDTO().setAppVersion("1").setAppKey("tradable").setUserName(userName)
@@ -71,14 +78,12 @@ public abstract class AbstractCityIndexExample {
         }
         account = tradingAccounts.get(0);
 
-        LightstreamerClient lightStreamClient = new LightstreamerClient(STREAMING_ENDPOINT, "STREAMINGALL");
-        lightStreamClient.connectionDetails.setUser(userName);
-        lightStreamClient.connectionDetails.setPassword(session);
-        lightStreamClient.addListener(new MyClientListener());
-        return lightStreamClient;
+        ILightStreamer client = createClient();
+        client.connect(userName, session, STREAMING_ENDPOINT, "STREAMINGALL", new MultiVersionConnectionListener());
+        return client;
     }
 
-    protected abstract void run(LightstreamerClient lightStreamClient) throws Exception;
+    protected abstract void run(ILightStreamer lightStreamClient) throws Exception;
 
     private URI uri(String relativeUrl) {
         try {
